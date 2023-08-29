@@ -74,7 +74,7 @@ class Agent:
 
         return a, prob, mask
 
-    def get_position(self, s, possible_x, possible_y):
+    def get_position(self, s, possible_x):
         s = torch.from_numpy(s).float().to(device).unsqueeze(0)
         x_logit = self.network.x_pi(s.permute(0, 3, 1, 2))
         mask_x = np.ones(self.x_action_size)

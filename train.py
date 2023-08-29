@@ -87,7 +87,7 @@ if __name__ == "__main__":
         while not done:
             possible_actions = env.get_possible_actions()
             a, prob, mask = agent.get_action(s, possible_actions)
-            possible_x, = env.get_possible_positions(a)
+            possible_x = env.get_possible_positions(a)
             a_x, prob_x, mask_x = agent.get_position(s, possible_x)
 
             s_prime, r, efficiency, batch_rate, done, overlap, temp = env.step((a_x, a))

@@ -17,7 +17,7 @@ class Management():
     def assign(self, action):
         overlap = False
         raw_part = self.part_list.pop(0)
-        part = raw_part.PixelPart[action[2]]
+        part = raw_part.PixelPart[action[1]]
 
         pixel_x = action[0]
 

@@ -13,6 +13,7 @@ class Management():
         self.part_list = part_list
         self.part_num = len(self.part_list)
         self.batch_num = 0
+        self.step = 0
 
     def assign(self, action):
         overlap = False
@@ -35,7 +36,6 @@ class Management():
                 temp = np.zeros(self.plate.PixelPlate.shape)
                 temp += self.plate.PixelPlate
 
-                pixel_x += 1
                 if (pixel_x + part_rows <= plate_rows) & (pixel_y + part_cols <= plate_cols):
                     temp[pixel_x:pixel_x + part_rows, pixel_y:pixel_y + part_cols] += part
                 else:
@@ -50,6 +50,7 @@ class Management():
                 if not overlap:
                     break
 
+        self.step += 1
         return overlap, temp
 
 

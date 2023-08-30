@@ -28,27 +28,24 @@ class Management():
         temp = np.zeros(self.plate.PixelPlate.shape)
         temp += self.plate.PixelPlate
 
-        row = temp[pixel_x]
-        zero_indices = np.where(row == 0)[0]
-        pixel_y_list = zero_indices.tolist()
+        for pixel_y in range(plate_cols - part_cols+1):
+            overlap = False
+            temp = np.zeros(self.plate.PixelPlate.shape)
+            temp += self.plate.PixelPlate
 
-        for pixel_y in pixel_y_list:
-                temp = np.zeros(self.plate.PixelPlate.shape)
-                temp += self.plate.PixelPlate
-
-                if (pixel_x + part_rows <= plate_rows) & (pixel_y + part_cols <= plate_cols):
-                    temp[pixel_x:pixel_x + part_rows, pixel_y:pixel_y + part_cols] += part
-                else:
+            if (pixel_x + part_rows <= plate_rows) & (pixel_y + part_cols <= plate_cols):
+                temp[pixel_x:pixel_x + part_rows, pixel_y:pixel_y + part_cols] += part
+            else:
+                overlap = True
+            if not overlap:
+                if np.max(temp) > 1:
                     overlap = True
-                if not overlap:
-                    if np.max(temp) > 1:
-                        overlap = True
-                    else:
-                        overlap = False
-                        self.plate.PixelPlate = temp
-                        self.batch_num += 1
-                if not overlap:
-                    break
+                else:
+                    overlap = False
+                    self.plate.PixelPlate = temp
+                    self.batch_num += 1
+            if not overlap:
+                break
 
         self.step += 1
         return overlap, temp

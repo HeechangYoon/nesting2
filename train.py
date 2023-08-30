@@ -47,7 +47,7 @@ if __name__ == "__main__":
     if not os.path.exists(simulation_dir):
         os.makedirs(simulation_dir)
 
-    image_dir = './output/train/image/'
+    image_dir = '/output/train/image/'
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
 
@@ -64,12 +64,9 @@ if __name__ == "__main__":
         start_episode = 1
 
     with open(log_dir + "train_log.csv", 'w') as f:
-        f.write('episode, reward, loss\n')
+        f.write('episode, reward, efficiency, batch_rate, loss\n')
 
     for e in range(start_episode, cfg.n_episode + 1):
-        # vessl.log(payload={"Train/learnig_rate": agent.scheduler.get_last_lr()[0]}, step=e)
-        # writer.add_scalar("Training/Learning Rate", agent.scheduler.get_last_lr()[0], e)
-
         s = env.reset()
         update_step = 0
         r_epi = 0.0
@@ -80,9 +77,9 @@ if __name__ == "__main__":
 
         if cfg.get_gif:
             image_list = list()
-            temp = np.zeros((210, 45))
-            temp += env.model.plate.PixelPlate
-            image_list.append(temp)
+            zero = np.zeros((210, 270))
+            zero += s[:, :, 0]
+            image_list.append(zero)
 
         while not done:
             possible_actions = env.get_possible_actions()
@@ -100,16 +97,17 @@ if __name__ == "__main__":
             update_step += 1
 
             if cfg.get_gif:
+                zero = np.zeros((210, 270))
+                zero[:, 45:] += s[:, 45:, 0]
                 if overlap:
-                    image_list.append(temp)
+                    zero[:, :45] += temp
+
+                    image_list.append(zero)
                 else:
-                    temp = np.zeros((210,45))
-                    temp += env.model.plate.PixelPlate
-                    image_list.append(temp)
+                    zero[:, :45] += env.model.plate.PixelPlate
+                    image_list.append(zero)
 
             if done:
-                # image = env.model.plate.PixelPlate
-                # save_image(image, image_dir + str(e) + '.png')
                 if cfg.get_gif:
                     create_gif(image_list, image_dir + str(e) + '.gif')
                 vessl.log(step=e, payload={'reward': r_epi})
@@ -118,53 +116,13 @@ if __name__ == "__main__":
                 break
             avg_loss += agent.train()
 
-        # agent.scheduler.step()
-
-        # print("episode: %d | reward: %.2f | distance : %d | loss : %.2f" % (e, r_epi, env.model.crane_dis_cum["Crane1"], avg_loss))
         with open(log_dir + "train_log.csv", 'a') as f:
-            f.write('%d,%1.2f,1.2%f\n' % (e, r_epi, avg_loss))
+            f.write('%d,%1.2f,%1.2f,%1.2f,1.2%f\n' % (e, r_epi, efficiency, batch_rate, avg_loss))
 
         writer.add_scalar("Training/Reward", r_epi, e)
         writer.add_scalar("Training/Loss", avg_loss / update_step, e)
-        # for i in env.model.crane_dis_cum.keys():
-        #     writer.add_scalar("Performance/Distance", env.model.crane_dis_cum[i], e)
-
-        # if e % 20 == 0:
-        #     with torch.no_grad():
-        #         delay, move, priority_ratio = [], [], []
-        #         for path in validation_path:
-        #             df_ship_test = pd.read_excel(path, sheet_name="ship", engine='openpyxl')
-        #             df_initial_test = pd.read_excel(path, sheet_name="initial", engine='openpyxl')
-        #             test_env = QuayScheduling(df_quay, df_ship_test, df_initial_test, w_delay, w_move, w_priority, rand=False)
-        #
-        #             s = test_env.reset()
-        #             done = False
-        #
-        #             while not done:
-        #                 possible_actions = test_env.get_possible_actions()
-        #                 a, prob, mask = agent.get_action(s, possible_actions)
-        #                 s_prime, r, done = test_env.step(a)
-        #                 s = s_prime
-        #
-        #                 if done:
-        #                     log = test_env.get_logs()
-        #                     break
-        #
-        #             average_delay = calculate_average_delay(log)
-        #             move_ratio = calculate_move_ratio(log)
-        #             priority_ratio = calculate_priority_ratio(log)
-        #
-        #             name = path.split("/")[-1][:-5] + "_log.csv"
-        #             with open(log_dir + name, 'a') as f:
-        #                 f.write('%d,%1.4f, %1.4f, %1.4f\n' % (e, average_delay, move_ratio, priority_ratio))
-        #
-        #             writer.add_scalars("Validation/Average Delay", {name.split("_")[1]: average_delay}, e)
-        #             writer.add_scalars("Validation/Move Ratio", {name.split("_")[1]: move_ratio}, e)
-        #             writer.add_scalars("Validation/Priority Ratio", {name.split("_")[1]: priority_ratio}, e)
-
 
         if e % 1000 == 0:
             agent.save_network(e, model_dir)
-            # env.model.mointor.save(simulation_dir + "episode%d.csv" % e)
 
     writer.close()

@@ -92,7 +92,7 @@ if __name__ == "__main__":
             agent.put_data((s, a_x, a, r, s_prime, prob_x, prob, mask_x, mask, done))
             s = s_prime
 
-            r_epi = r
+            r_epi += r
 
             update_step += 1
 

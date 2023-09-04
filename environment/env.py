@@ -9,9 +9,9 @@ from environment.simulation import Management
 
 class HiNEST(object):
     def __init__(self, look_ahead=5,  # 상태 구성 시 포함할 부재의 수
-                 plate_l_min=21000,  # 생성될 강재의 최소 길이
+                 plate_l_min=3000,  # 생성될 강재의 최소 길이
                  plate_l_max=21000,  # 생성될 강재의 최대 길이
-                 plate_b_min=4500,  # 생성될 강재의 최소 폭
+                 plate_b_min=1000,  # 생성될 강재의 최소 폭
                  plate_b_max=4500  # 생성될 강재의 최대 폭
                  ):
         self.look_ahead = look_ahead

@@ -92,7 +92,7 @@ class HiNEST(object):
         assigned = plate_a[0:end_row, 0:end_col]
         efficiency = np.sum(assigned) / ((end_row - 0) * (end_col - 0))
         if not overlap:
-            reward -= (1 - efficiency)
+            reward -= (1 - efficiency) / self.model.part_num
 
         if overlap:
             reward -= 1 / self.model.part_num

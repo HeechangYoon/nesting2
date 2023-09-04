@@ -109,7 +109,9 @@ if __name__ == "__main__":
 
             if done:
                 if cfg.get_gif:
-                    create_gif(image_list, image_dir + str(e) + '.gif')
+                    if e % 100 == 0:
+                        agent.save_network(e, model_dir)
+                        create_gif(image_list, image_dir + str(e) + '.gif')
                 vessl.log(step=e, payload={'reward': r_epi})
                 vessl.log(step=e, payload={'efficiency': efficiency})
                 vessl.log(step=e, payload={'batch_rate': batch_rate})

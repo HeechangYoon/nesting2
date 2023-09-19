@@ -125,6 +125,6 @@ if __name__ == "__main__":
         writer.add_scalar("Training/Loss", avg_loss / update_step, e)
 
         if e % 1000 == 0:
-            agent.save_network(e, model_dir)
+            agent.save_network(model, model_dir)
 
     writer.close()

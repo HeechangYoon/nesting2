@@ -144,4 +144,4 @@ class Agent:
         torch.save({"episode": e,
                     "model_state_dict": self.network.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict()},
-                   file_dir + "episode%d.pt" % e)
+                   file_dir + "model.pt")

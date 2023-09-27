@@ -38,15 +38,15 @@ if __name__ == "__main__":
     lmbda = cfg.lmbda
     t_max = cfg.t_max
 
-    model_dir = './output/train/model/'
+    model_dir = 'output/train/model/'
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
-    log_dir = './output/train/log/'
+    log_dir = '/output/train/log/'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    image_dir = './output/train/image/'
+    image_dir = '/output/train/image/'
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
 

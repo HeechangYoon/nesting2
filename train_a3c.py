@@ -38,7 +38,7 @@ if __name__ == "__main__":
     lmbda = cfg.lmbda
     t_max = cfg.t_max
 
-    model_dir = 'output/train/model/'
+    model_dir = '/output/train/model/'
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 

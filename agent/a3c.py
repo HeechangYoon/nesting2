@@ -45,7 +45,7 @@ class Worker(mp.Process):
 
         self.data = []
         self.env = HiNEST(look_ahead=5)
-        self.local_network = Network(self.env.state_size, self.env.x_action_size, self.env.a_action_size)
+        self.local_network = Network(self.env.state_size, self.env.x_action_size, self.env.a_action_size).to(device)
 
     def get_action(self, s, possible_actions):
         s = torch.from_numpy(s).float().to(device).unsqueeze(0)

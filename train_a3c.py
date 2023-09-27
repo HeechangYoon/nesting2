@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # writer = SummaryWriter(log_dir)
 
     env = HiNEST(look_ahead=5)
-    global_network = Network(env.state_size, env.x_action_size, env.a_action_size)
+    global_network = Network(env.state_size, env.x_action_size, env.a_action_size).to(device)
     global_network.share_memory()  # share the global parameters in multiprocessing
     shared_optimizer = SharedAdam(global_network.parameters(), lr=lr)  # global optimizer
     global_episode = mp.Value('i', 0)

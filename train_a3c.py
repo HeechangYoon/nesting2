@@ -30,6 +30,7 @@ def create_gif(image_data_list, file_path, duration=200):
 if __name__ == "__main__":
     cfg = get_cfg()
     vessl.init(organization="snu-eng-dgx", project="nesting", hp=cfg)
+    torch.multiprocessing.set_start_method('spawn')
 
     n_episode = cfg.n_episode
     n_agents = cfg.n_agents

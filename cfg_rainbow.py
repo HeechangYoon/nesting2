@@ -14,6 +14,7 @@ def get_cfg():
     parser.add_argument("--beta_start", type=float, default=0.4, help="Correction parameter for importance sampling")
     parser.add_argument("--beta_steps", type=int, default=1500000, help="Total number of steps for annealing")
     parser.add_argument("--batch_size", type=int, default=64, help="Batch size for updating the DQN")
+    parser.add_argument("--N", type=int, default=16, help="Number of Quantiles")
     parser.add_argument("--lr", type=float, default=0.00001, help="Learning rate")
     parser.add_argument("--lr_step", type=int, default=2500, help="Step size to reduce learning rate")
     parser.add_argument("--lr_decay", type=float, default=0.9, help="Learning rate decay ratio")

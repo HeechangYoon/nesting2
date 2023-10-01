@@ -150,7 +150,7 @@ class Agent():
         else:
             angle = [random.choices(candidate)[0] for candidate in possible_a]
 
-        return angle
+        return angle[0]
 
     def get_position(self, state, possible_x, eps=0.0, noisy=True):
         state = torch.from_numpy(state).float().to(device).unsqueeze(0)
@@ -169,7 +169,7 @@ class Agent():
         else:
             position = [random.choices(candidate)[0] for candidate in possible_x]
 
-        return position
+        return position[0]
 
     def learn(self, experiences):
         self.optimizer.zero_grad()
@@ -177,48 +177,81 @@ class Agent():
         states, angles, positions, rewards, next_states, dones, idx, weights = experiences
         states = torch.FloatTensor(states).to(device)
         next_states = torch.FloatTensor(next_states).to(device)
-        actions = torch.LongTensor(actions).to(device).unsqueeze(1)
+        angles = torch.LongTensor(angles).to(device).unsqueeze(1)
+        positions = torch.LongTensor(positions).to(device).unsqueeze(1)
         rewards = torch.FloatTensor(rewards).to(device).unsqueeze(1)
         dones = torch.FloatTensor(dones).to(device).unsqueeze(1)
         weights = torch.FloatTensor(weights).unsqueeze(1).to(device)
 
-        Q_targets_next, _ = self.qnetwork_target(next_states, self.N)
-        Q_targets_next = Q_targets_next.detach()  # (batch, num_tau, actions)
-        q_t_n = Q_targets_next.mean(dim=1)
+        Q_targets_next_a, _ = self.qnetwork_target.forward_a(next_states, self.N)
+        Q_targets_next_a = Q_targets_next_a.detach()  # (batch, num_tau, actions)
+        q_t_n_a = Q_targets_next_a.mean(dim=1)
+
+        Q_targets_next_x, _ = self.qnetwork_target.forward_x(next_states, self.N)
+        Q_targets_next_x = Q_targets_next_x.detach()  # (batch, num_tau, actions)
+        q_t_n_x = Q_targets_next_x.mean(dim=1)
+
         # calculate log-pi
-        logsum = torch.logsumexp((Q_targets_next - Q_targets_next.max(2)[0].unsqueeze(-1)) / self.entropy_tau, 2).unsqueeze(-1)
-        assert logsum.shape == (self.batch_size, self.N, 1), "log pi next has wrong shape"
-        tau_log_pi_next = Q_targets_next - Q_targets_next.max(2)[0].unsqueeze(-1) - self.entropy_tau * logsum
+        logsum_a = torch.logsumexp((Q_targets_next_a - Q_targets_next_a.max(2)[0].unsqueeze(-1)) / self.entropy_tau, 2).unsqueeze(-1)
+        assert logsum_a.shape == (self.batch_size, self.N, 1), "log pi next has wrong shape"
+        tau_log_pi_next_a = Q_targets_next_a - Q_targets_next_a.max(2)[0].unsqueeze(-1) - self.entropy_tau * logsum_a
+        pi_target_a = F.softmax(q_t_n_a / self.entropy_tau, dim=1).unsqueeze(1)
+        Q_target_a = (self.gamma ** self.n_step * (pi_target_a * (Q_targets_next_a - tau_log_pi_next_a) * (1 - dones.unsqueeze(-1))).sum(2)).unsqueeze(1)
+        assert Q_target_a.shape == (self.batch_size, 1, self.N)
 
-        pi_target = F.softmax(q_t_n / self.entropy_tau, dim=1).unsqueeze(1)
+        logsum_x = torch.logsumexp((Q_targets_next_x - Q_targets_next_x.max(2)[0].unsqueeze(-1)) / self.entropy_tau, 2).unsqueeze(-1)
+        assert logsum_x.shape == (self.batch_size, self.N, 1), "log pi next has wrong shape"
+        tau_log_pi_next_x = Q_targets_next_x - Q_targets_next_x.max(2)[0].unsqueeze(-1) - self.entropy_tau * logsum_x
+        pi_target_x = F.softmax(q_t_n_x / self.entropy_tau, dim=1).unsqueeze(1)
+        Q_target_x = (self.gamma ** self.n_step * (pi_target_x * (Q_targets_next_x - tau_log_pi_next_x) * (1 - dones.unsqueeze(-1))).sum(2)).unsqueeze(1)
+        assert Q_target_x.shape == (self.batch_size, 1, self.N)
 
-        Q_target = (self.gamma ** self.n_step * (pi_target * (Q_targets_next - tau_log_pi_next) * (1 - dones.unsqueeze(-1))).sum(2)).unsqueeze(1)
-        assert Q_target.shape == (self.batch_size, 1, self.N)
+        q_k_target_a = self.qnetwork_target.get_qvalues_a(states, noisy=True).detach()
+        v_k_target_a = q_k_target_a.max(1)[0].unsqueeze(-1)
+        tau_log_pik_a = q_k_target_a - v_k_target_a - self.entropy_tau * torch.logsumexp((q_k_target_a - v_k_target_a) / self.entropy_tau, 1).unsqueeze(-1)
+        assert tau_log_pik_a.shape == (self.batch_size, self.a_action_size), "shape instead is {}".format(tau_log_pik_a.shape)
+        munchausen_addon_a = tau_log_pik_a.gather(1, angles)
 
-        q_k_target = self.qnetwork_target.get_qvalues(states, noisy=True).detach()
-        v_k_target = q_k_target.max(1)[0].unsqueeze(-1)
-        tau_log_pik = q_k_target - v_k_target - self.entropy_tau * torch.logsumexp((q_k_target - v_k_target) / self.entropy_tau, 1).unsqueeze(-1)
-
-        assert tau_log_pik.shape == (self.batch_size, self.action_size), "shape instead is {}".format(tau_log_pik.shape)
-        munchausen_addon = tau_log_pik.gather(1, actions)
+        q_k_target_x = self.qnetwork_target.get_qvalues_x(states, noisy=True).detach()
+        v_k_target_x = q_k_target_x.max(1)[0].unsqueeze(-1)
+        tau_log_pik_x = q_k_target_x - v_k_target_x - self.entropy_tau * torch.logsumexp((q_k_target_x - v_k_target_x) / self.entropy_tau, 1).unsqueeze(-1)
+        assert tau_log_pik_x.shape == (self.batch_size, self.x_action_size), "shape instead is {}".format(tau_log_pik_x.shape)
+        munchausen_addon_x = tau_log_pik_x.gather(1, positions)
 
         # calc munchausen reward:
-        munchausen_reward = (rewards + self.alpha * torch.clamp(munchausen_addon, min=self.lo, max=0)).unsqueeze(-1)
-        assert munchausen_reward.shape == (self.batch_size, 1, 1)
+        munchausen_reward_a = (rewards + self.alpha * torch.clamp(munchausen_addon_a, min=self.lo, max=0)).unsqueeze(-1)
+        assert munchausen_reward_a.shape == (self.batch_size, 1, 1)
         # Compute Q targets for current states
-        Q_targets = munchausen_reward + Q_target
+        Q_targets_a = munchausen_reward_a + Q_target_a
+
+        munchausen_reward_x = (rewards + self.alpha * torch.clamp(munchausen_addon_x, min=self.lo, max=0)).unsqueeze(-1)
+        assert munchausen_reward_x.shape == (self.batch_size, 1, 1)
+        # Compute Q targets for current states
+        Q_targets_x = munchausen_reward_x + Q_target_x
+
         # Get expected Q values from local model
-        q_k, taus = self.qnetwork_local(states, self.N, noisy=True)
-        Q_expected = q_k.gather(2, actions.unsqueeze(-1).expand(self.batch_size, self.N, 1))
-        assert Q_expected.shape == (self.batch_size, self.N, 1)
+        q_k_a, taus_a = self.qnetwork_local.forward_a(states, self.N, noisy=True)
+        Q_expected_a = q_k_a.gather(2, angles.unsqueeze(-1).expand(self.batch_size, self.N, 1))
+        assert Q_expected_a.shape == (self.batch_size, self.N, 1)
+
+        q_k_x, taus_x = self.qnetwork_local.forward_x(states, self.N, noisy=True)
+        Q_expected_x = q_k_x.gather(2, positions.unsqueeze(-1).expand(self.batch_size, self.N, 1))
+        assert Q_expected_x.shape == (self.batch_size, self.N, 1)
 
         # Quantile Huber loss
-        td_error = Q_targets - Q_expected
-        assert td_error.shape == (self.batch_size, self.N, self.N), "wrong td error shape"
-        huber_l = calculate_huber_loss(td_error, 1.0)
-        quantil_l = abs(taus - (td_error.detach() < 0).float()) * huber_l / 1.0
+        td_error_a = Q_targets_a - Q_expected_a
+        assert td_error_a.shape == (self.batch_size, self.N, self.N), "wrong td error shape"
+        huber_l_a = calculate_huber_loss(td_error_a, 1.0)
+        quantil_l_a = abs(taus_a - (td_error_a.detach() < 0).float()) * huber_l_a / 1.0
 
-        loss = quantil_l.sum(dim=1).mean(dim=1, keepdim=True) * weights  # , keepdim=True if per weights get multipl
+        td_error_x = Q_targets_x - Q_expected_x
+        assert td_error_x.shape == (self.batch_size, self.N, self.N), "wrong td error shape"
+        huber_l_x = calculate_huber_loss(td_error_x, 1.0)
+        quantil_l_x = abs(taus_x - (td_error_x.detach() < 0).float()) * huber_l_x / 1.0
+
+        loss_a = quantil_l_a.sum(dim=1).mean(dim=1, keepdim=True) * weights  # , keepdim=True if per weights get multipl
+        loss_x = quantil_l_x.sum(dim=1).mean(dim=1, keepdim=True) * weights  # , keepdim=True if per weights get multipl
+        loss = loss_a + loss_x
         loss = loss.mean()
 
         # Minimize the loss
@@ -229,7 +262,7 @@ class Agent():
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local, self.qnetwork_target)
         # update priorities
-        td_error = td_error.sum(dim=1).mean(dim=1, keepdim=True)  # not sure about this -> test
+        td_error = 0.5 * (td_error_a.sum(dim=1).mean(dim=1, keepdim=True) + td_error_x.sum(dim=1).mean(dim=1, keepdim=True)) # not sure about this -> test
         self.memory.update_priorities(idx, abs(td_error.data.cpu().numpy()))
         return loss.detach().cpu().numpy()
 

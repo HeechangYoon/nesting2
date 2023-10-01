@@ -72,9 +72,9 @@ class Network(nn.Module):
         self.fc3_a = NoisyLinear(512, 256)
 
         self.advantage_x = NoisyLinear(256, x_action_size)
-        self.v_x = NoisyLinear(256, 1)
+        self.value_x = NoisyLinear(256, 1)
         self.advantage_a = NoisyLinear(256, a_action_size)
-        self.v_a = NoisyLinear(256, 1)
+        self.value_a = NoisyLinear(256, 1)
 
     def calc_cos(self, batch_size, n_tau=8):
         """
@@ -106,7 +106,7 @@ class Network(nn.Module):
         h = torch.selu(self.fc2_x(h, noisy=noisy))
         h = torch.selu(self.fc3_x(h, noisy=noisy))
         advantage = self.advantage_x(h, noisy=noisy)
-        value = self.value(h, noisy=noisy)
+        value = self.value_x(h, noisy=noisy)
 
         out = value + advantage - advantage.mean(dim=1, keepdim=True)
         out = out.view(batch_size, num_tau, self.x_action_size)
@@ -133,7 +133,7 @@ class Network(nn.Module):
         h = torch.selu(self.fc2_a(h, noisy=noisy))
         h = torch.selu(self.fc3_a(h, noisy=noisy))
         advantage = self.advantage_a(h, noisy=noisy)
-        value = self.value(h, noisy=noisy)
+        value = self.value_a(h, noisy=noisy)
 
         out = value + advantage - advantage.mean(dim=1, keepdim=True)
         out = out.view(batch_size, num_tau, self.a_action_size)

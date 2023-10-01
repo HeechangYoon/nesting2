@@ -93,11 +93,11 @@ if __name__ == "__main__":
 
         while not done:
             possible_a = env.get_possible_actions()
-            angle = agent.get_angle(state, possible_a)
-            possible_x = env.get_possible_positions(a)
-            position = agent.get_position(state, possible_x)
+            angle = agent.get_angle(state, [possible_a])
+            possible_x = env.get_possible_positions(angle)
+            position = agent.get_position(state, [possible_x])
 
-            next_state, reward, efficiency, batch_rate, done, overlap, temp = env.step((angle, position))
+            next_state, reward, efficiency, batch_rate, done, overlap, temp = env.step((position, angle))
             loss = agent.step(state, angle, position, reward, next_state, done)
             if loss is not None:
                 loss_list.append(loss)
@@ -116,18 +116,28 @@ if __name__ == "__main__":
                     image_list.append(zero)
 
             if done:
-                loss_avg = sum(loss_list) / len(loss_list)
+                if len(loss_list) > 0:
+                    loss_avg = sum(loss_list) / len(loss_list)
+                else:
+                    loss_avg = 0.0
 
                 if cfg.get_gif:
                     if e % 500 == 0:
                         agent.save(e, model_dir)
                         create_gif(image_list, image_dir + str(e) + '.gif')
 
+                print("Episode:", e,
+                      "| Episode_reward: %.2f" % r_epi,
+                      "| Efficiency: %.2f" % efficiency,
+                      "| Batch_rate: %.2f" % batch_rate,
+                      "| Loss: %.2f" % loss_avg)
+
                 with open(log_dir + "train_log.csv", 'a') as f:
                     f.write('%d,%1.2f,%1.2f,%1.2f,1.2%f\n' % (e, r_epi, efficiency, batch_rate, loss_avg))
 
                 vessl.log(step=e, payload={"learnig_rate": agent.scheduler.get_last_lr()[0]})
-                vessl.log(step=e, payload={'loss': loss_avg})
+                if len(loss_list) > 0:
+                    vessl.log(step=e, payload={'loss': loss_avg})
                 vessl.log(step=e, payload={'reward': r_epi})
                 vessl.log(step=e, payload={'efficiency': efficiency})
                 vessl.log(step=e, payload={'batch_rate': batch_rate})

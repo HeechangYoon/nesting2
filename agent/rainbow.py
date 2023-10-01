@@ -183,11 +183,11 @@ class Agent():
         dones = torch.FloatTensor(dones).to(device).unsqueeze(1)
         weights = torch.FloatTensor(weights).unsqueeze(1).to(device)
 
-        Q_targets_next_a, _ = self.qnetwork_target.forward_a(next_states, self.N)
+        Q_targets_next_a, _ = self.qnetwork_target.forward_a(next_states.permute(0, 3, 1, 2), self.N)
         Q_targets_next_a = Q_targets_next_a.detach()  # (batch, num_tau, actions)
         q_t_n_a = Q_targets_next_a.mean(dim=1)
 
-        Q_targets_next_x, _ = self.qnetwork_target.forward_x(next_states, self.N)
+        Q_targets_next_x, _ = self.qnetwork_target.forward_x(next_states.permute(0, 3, 1, 2), self.N)
         Q_targets_next_x = Q_targets_next_x.detach()  # (batch, num_tau, actions)
         q_t_n_x = Q_targets_next_x.mean(dim=1)
 
@@ -206,13 +206,13 @@ class Agent():
         Q_target_x = (self.gamma ** self.n_step * (pi_target_x * (Q_targets_next_x - tau_log_pi_next_x) * (1 - dones.unsqueeze(-1))).sum(2)).unsqueeze(1)
         assert Q_target_x.shape == (self.batch_size, 1, self.N)
 
-        q_k_target_a = self.qnetwork_target.get_qvalues_a(states, noisy=True).detach()
+        q_k_target_a = self.qnetwork_target.get_qvalues_a(states.permute(0, 3, 1, 2), noisy=True).detach()
         v_k_target_a = q_k_target_a.max(1)[0].unsqueeze(-1)
         tau_log_pik_a = q_k_target_a - v_k_target_a - self.entropy_tau * torch.logsumexp((q_k_target_a - v_k_target_a) / self.entropy_tau, 1).unsqueeze(-1)
         assert tau_log_pik_a.shape == (self.batch_size, self.a_action_size), "shape instead is {}".format(tau_log_pik_a.shape)
         munchausen_addon_a = tau_log_pik_a.gather(1, angles)
 
-        q_k_target_x = self.qnetwork_target.get_qvalues_x(states, noisy=True).detach()
+        q_k_target_x = self.qnetwork_target.get_qvalues_x(states.permute(0, 3, 1, 2), noisy=True).detach()
         v_k_target_x = q_k_target_x.max(1)[0].unsqueeze(-1)
         tau_log_pik_x = q_k_target_x - v_k_target_x - self.entropy_tau * torch.logsumexp((q_k_target_x - v_k_target_x) / self.entropy_tau, 1).unsqueeze(-1)
         assert tau_log_pik_x.shape == (self.batch_size, self.x_action_size), "shape instead is {}".format(tau_log_pik_x.shape)
@@ -230,11 +230,11 @@ class Agent():
         Q_targets_x = munchausen_reward_x + Q_target_x
 
         # Get expected Q values from local model
-        q_k_a, taus_a = self.qnetwork_local.forward_a(states, self.N, noisy=True)
+        q_k_a, taus_a = self.qnetwork_local.forward_a(states.permute(0, 3, 1, 2), self.N, noisy=True)
         Q_expected_a = q_k_a.gather(2, angles.unsqueeze(-1).expand(self.batch_size, self.N, 1))
         assert Q_expected_a.shape == (self.batch_size, self.N, 1)
 
-        q_k_x, taus_x = self.qnetwork_local.forward_x(states, self.N, noisy=True)
+        q_k_x, taus_x = self.qnetwork_local.forward_x(states.permute(0, 3, 1, 2), self.N, noisy=True)
         Q_expected_x = q_k_x.gather(2, positions.unsqueeze(-1).expand(self.batch_size, self.N, 1))
         assert Q_expected_x.shape == (self.batch_size, self.N, 1)
 

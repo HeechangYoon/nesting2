@@ -92,7 +92,7 @@ class HiNEST(object):
         assigned = plate_a[0:end_row, 0:end_col]
         efficiency = np.sum(assigned) / ((end_row - 0) * (end_col - 0))
 
-        ref_end_row, ref_end_col = ref_point[0], ref_point[0]
+        ref_end_row, ref_end_col = ref_point[0], ref_point[1]
         ref_assigned = plate_a[0:ref_end_row, 0:ref_end_col]
         ref_efficiency = np.sum(ref_assigned) / ((ref_end_row - 0) * (ref_end_col - 0))
         if not overlap:

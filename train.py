@@ -4,7 +4,7 @@ import vessl
 from cfg import get_cfg
 from torch.utils.tensorboard import SummaryWriter
 from agent.ppo import *
-from environment.env import *
+from environment.env2 import *
 
 from PIL import Image
 

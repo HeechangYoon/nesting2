@@ -4,7 +4,7 @@ import vessl
 from cfg import get_cfg
 from torch.utils.tensorboard import SummaryWriter
 from agent.ppo import *
-from environment.env_fixeddata import *
+from environment.env import *
 
 from PIL import Image
 
@@ -115,14 +115,15 @@ if __name__ == "__main__":
                 vessl.log(step=e, payload={'reward': r_epi})
                 vessl.log(step=e, payload={'efficiency': efficiency})
                 vessl.log(step=e, payload={'batch_rate': batch_rate})
+                vessl.log(step=e, payload={'Loss': avg_loss})
                 break
             avg_loss += agent.train()
 
         with open(log_dir + "train_log.csv", 'a') as f:
             f.write('%d,%1.2f,%1.2f,%1.2f,1.2%f\n' % (e, r_epi, efficiency, batch_rate, avg_loss))
 
-        writer.add_scalar("Training/Reward", r_epi, e)
-        writer.add_scalar("Training/Loss", avg_loss / update_step, e)
+        # writer.add_scalar("Training/Reward", r_epi, e)
+        # writer.add_scalar("Training/Loss", avg_loss / update_step, e)
 
         if e % 1000 == 0:
             agent.save_network(e, model_dir)

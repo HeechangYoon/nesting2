@@ -74,13 +74,36 @@ class Network(nn.Module):
 
     def get_action(self, s, possible_actions):
         s = torch.from_numpy(s).float().to(device).unsqueeze(0)
-        logit = self.pi(s.permute(0, 3, 1, 2))
-        mask = np.ones(self.action_size)
-        mask[possible_actions] = 0.0
-        logit = logit - 1e8 * torch.from_numpy(mask).float().to(device)
-        prob = torch.softmax(logit, dim=-1)[0]
 
-        m = Categorical(prob)
-        a = m.sample().item()
+        a_logit = self.a_pi(s.permute(0, 3, 1, 2))
+
+        mask = np.ones(self.a_action_size)
+        mask[possible_actions] = 0.0
+        a_logit = a_logit - 1e8 * torch.from_numpy(mask).float().to(device)
+
+        a_prob = torch.softmax(a_logit, dim=-1)[0]
+
+        a_m = Categorical(a_prob)
+        angle = a_m.sample().item()
+
+        a = angle
+        prob = a_prob[angle].item()
 
         return a
+
+    def get_position(self, s, possible_x):
+        s = torch.from_numpy(s).float().to(device).unsqueeze(0)
+        x_logit = self.x_pi(s.permute(0, 3, 1, 2))
+        mask_x = np.ones(self.x_action_size)
+        mask_x[possible_x] = 0.0
+        x_logit = x_logit - 1e8 * torch.from_numpy(mask_x).float().to(device)
+
+        x_prob = torch.softmax(x_logit, dim=-1)[0]
+
+        x_m = Categorical(x_prob)
+        x = x_m.sample().item()
+
+        a_x = x
+        prob_x = x_prob[x].item()
+
+        return a_x

@@ -4,7 +4,7 @@ import vessl
 from cfg import get_cfg
 from torch.utils.tensorboard import SummaryWriter
 from agent.ppo import *
-from environment.env2_fixeddata import *
+from environment.env import *
 
 from PIL import Image
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
 
-    env = HiNEST(look_ahead=5)
+    env = HiNEST(rec=True)
     agent = Agent(env.state_size, env.x_action_size, env.a_action_size, lr, gamma, lmbda, eps_clip, K_epoch)
     writer = SummaryWriter(log_dir)
 

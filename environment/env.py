@@ -3,7 +3,7 @@ import random
 import numpy as np
 import math
 
-from environment.data import read_data, generate_data
+from environment.data import *
 from environment.simulation import Management
 
 
@@ -12,22 +12,26 @@ class HiNEST(object):
                  plate_l_min=21000,  # 생성될 강재의 최소 길이
                  plate_l_max=21000,  # 생성될 강재의 최대 길이
                  plate_b_min=4500,  # 생성될 강재의 최소 폭
-                 plate_b_max=4500  # 생성될 강재의 최대 폭
+                 plate_b_max=4500,  # 생성될 강재의 최대 폭
+                 rec=False
                  ):
         self.look_ahead = look_ahead
         self.plate_l_min = plate_l_min
         self.plate_l_max = plate_l_max
         self.plate_b_min = plate_b_min
         self.plate_b_max = plate_b_max
+        self.rec = rec
 
-        self.raw_part_list = read_data()
-
-        plate, part_list = generate_data(self.raw_part_list,
-                                         self.plate_l_min,
-                                         self.plate_l_max,
-                                         self.plate_b_min,
-                                         self.plate_b_max
-                                         )
+        if self.rec:
+            plate, part_list = generate_rec_data()
+        else:
+            self.raw_part_list = read_data()
+            plate, part_list = generate_data(self.raw_part_list,
+                                             self.plate_l_min,
+                                             self.plate_l_max,
+                                             self.plate_b_min,
+                                             self.plate_b_max
+                                             )
 
         self.model = Management(plate, part_list)
 
@@ -53,12 +57,15 @@ class HiNEST(object):
         return next_state, reward, efficiency, batch_rate, done, overlap, temp
 
     def reset(self):
-        plate, part_list = generate_data(self.raw_part_list,
-                                         self.plate_l_min,
-                                         self.plate_l_max,
-                                         self.plate_b_min,
-                                         self.plate_b_max
-                                         )
+        if self.rec:
+            plate, part_list = generate_rec_data()
+        else:
+            plate, part_list = generate_data(self.raw_part_list,
+                                             self.plate_l_min,
+                                             self.plate_l_max,
+                                             self.plate_b_min,
+                                             self.plate_b_max
+                                             )
 
         self.model = Management(plate, part_list)
 

@@ -5,6 +5,7 @@ import pathlib
 import random
 import math
 import time
+from scipy.ndimage import rotate
 
 import numpy as np
 import pandas as pd
@@ -122,6 +123,78 @@ def check_feasible(index, raw_part_list, plate):
         return True
     else:
         return False
+
+def generate_single_normal_distribution_integer(min_val, max_val):
+    mean = (min_val + max_val) / 2
+    std_dev = (max_val - min_val) / 6  # 대략적으로 전체 범위의 1/6
+
+    while True:
+        # 정규분포에 따른 랜덤 값 생성
+        sample = np.random.normal(mean, std_dev)
+
+        # 결과를 정수형으로 변환 및 범위 내 값인지 확인
+        int_sample = int(round(sample))
+        if min_val <= int_sample <= max_val:
+            return int_sample
+
+
+def generate_rec_data(plate_length=21000,
+                      plate_breadth=4500
+                      ):
+    image_length = math.ceil(plate_length / 100)
+    image_breadth = math.ceil(plate_breadth / 100)
+    target_area = image_length * image_breadth * 0.9
+
+    plate = Plate(plate_length, plate_breadth, plate_length, plate_length, plate_breadth, plate_breadth)
+
+    # rect_length_max = math.floor(image_length * 0.5)
+    # rect_breadth_max = math.floor(image_breadth * 0.5)
+
+    # rect_length_max_list = [5, 20, 20, 20,  100]
+    # rect_breadth_max_list = [5, 20, 20, 20, 20]
+
+    shape_list = [(5,5), (5,5), (5,5), (20,20), (20,20), (20,20), (20,20), (20,20), (60,20), (80, 20), (100, 20)]
+
+    index=0
+
+    total_area = 0
+
+    images = []
+
+    while total_area < target_area:
+        rect_length_max = random.choice(shape_list)[0]
+        rect_breadth_max = random.choice(shape_list)[1]
+        rect_length = generate_single_normal_distribution_integer(0.5*rect_length_max, rect_length_max)
+        rect_breadth = generate_single_normal_distribution_integer(0.5*rect_breadth_max, rect_breadth_max)
+
+        area = rect_length * rect_breadth
+
+        if total_area + area > target_area:
+            break
+
+        total_area += area
+
+        image = np.ones((rect_length, rect_breadth))
+
+        temp_image = np.ones((rect_length, rect_breadth, 1))
+        part = Part(area, temp_image)
+
+        angle_list = list()
+        for i in range(24):
+            rotated_image = rotate(image, 15 * i, reshape=True, order=0)
+            binary_image = np.where(rotated_image > 0.1, 1, 0)
+            index += 1
+
+            angle_list.append(binary_image)
+
+        part.PixelPart = angle_list
+        images.append(part)
+
+    sorted_images = sorted(images, key=lambda x: x.Area, reverse=True)
+
+    return plate, sorted_images
+
+
 
 if __name__ == '__main__':
     raw_part_list = read_data()
